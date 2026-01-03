@@ -1,24 +1,21 @@
-// supabase.module.ts
 import { Module, Scope } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule, ConfigType } from '@nestjs/config';
 import { SupabaseService } from './supabase.service';
+import supabaseConfig from './supabase.config';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule.forFeature(supabaseConfig)],
   providers: [
     {
       provide: 'SUPABASE_CLIENT',
       scope: Scope.REQUEST, // ← Penting! Biar tiap request punya instance sendiri
-      useFactory: (configService: ConfigService) => {
-        const supabaseUrl = configService.get<string>('SUPABASE_URL');
-        const supabaseKey = configService.get<string>('SUPABASE_KEY'); // anon key atau service_role
-
+      useFactory: (config: ConfigType<typeof supabaseConfig>) => {
         return {
-          url: supabaseUrl,
-          key: supabaseKey,
+          url: config.url,
+          key: config.key,
         };
       },
-      inject: [ConfigService],
+      inject: [supabaseConfig.KEY],
     },
     SupabaseService,
   ],

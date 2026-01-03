@@ -2,11 +2,11 @@
 import { Inject, Injectable, Scope } from '@nestjs/common';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { REQUEST } from '@nestjs/core';
-import { Request } from 'express';
+import type { Request } from 'express';
 
 @Injectable({ scope: Scope.REQUEST })
 export class SupabaseService {
-  private client: SupabaseClient;
+  private client: SupabaseClient<any, any, any>;
 
   constructor(
     @Inject('SUPABASE_CLIENT') private config: { url: string; key: string },
@@ -17,7 +17,10 @@ export class SupabaseService {
     // Optional: Ambil access_token dari header (kalau frontend kirim bearer token)
     const token = this.request?.headers?.authorization?.split(' ')[1];
     if (token) {
-      this.client.auth.setSession({ access_token: token, refresh_token: '' });
+      void this.client.auth.setSession({
+        access_token: token,
+        refresh_token: '',
+      });
     }
   }
 
