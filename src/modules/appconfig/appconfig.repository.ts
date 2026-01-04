@@ -19,87 +19,41 @@ export class AppconfigRepository {
     private readonly helperService: HelperService,
   ) {}
 
-  async getProjectBySecret(secret: string): Promise<{ project_id: string }> {
+  async getAppConfigBySecretJoined(secret: string): Promise<any> {
     const client = this.supabaseService.clientInstance;
-    const { data, error } = await client
-      .from('secret_keys')
-      .select('project_id, expires_at, description')
-      .eq('secret_key', secret)
-      .single();
+    const { data, error } = await client.rpc('get_app_config_by_secret', {
+      secret_input: secret,
+    });
 
     if (error || !data) {
-      throw new UnauthorizedException('Invalid secret key');
+      console.error(error);
+      throw new UnauthorizedException(
+        'Invalid secret key or configuration not found',
+      );
     }
 
-    const secretData = data as Secret;
+    // The RPC returns the JSON structure directly
+    const result = data as any;
+
+    // Check expiration if it's part of the returned data (or handle inside RPC)
+    // Assuming RPC handles basic retrieval, we check expiration here if returned,
+    // but based on typical RPC patterns for this use case, we might return everything.
+
+    // Let's assume RPC returns:
+    // {
+    //   project_id, expires_at, description,
+    //   projects: { ... }
+    // }
+    // Or even better, let the RPC return the flattened structure we need directly?
+    // For now, let's keep the structure similar to what we had but fetched via RPC to bypass RLS.
+
+    // If we use RPC, we usually return a JSON object.
 
     const now = this.helperService.now();
-    if (secretData.expires_at && secretData.expires_at < now) {
+    if (result.expires_at && result.expires_at < now) {
       throw new UnauthorizedException('Secret key has expired');
     }
 
-    return { project_id: secretData.project_id };
-  }
-
-  async getDataProjectByID(id: string): Promise<Projects> {
-    const client = this.supabaseService.clientInstance;
-    const { data, error } = await client
-      .from('projects')
-      .select('id, name, description, status, app_config_id')
-      .eq('id', id)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Supabase Error (getDataProjectByID):', error);
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-
-    if (!data) {
-      throw new NotFoundException(`Project with ID ${id} not found`);
-    }
-
-    return data as Projects;
-  }
-
-  async getDataAppConfigByID(id: string): Promise<AppConfig> {
-    const client = this.supabaseService.clientInstance;
-    const { data, error } = await client
-      .from('app_config')
-      .select(
-        'id, tahun, name_app, subname_app, url, url_api, version, updatemandatory, primary_icon_asset_id, primary_splash_asset_id, description',
-      )
-      .eq('id', id)
-      .single();
-
-    if (error || !data) {
-      throw new NotFoundException(`App config with ID ${id} not found`);
-    }
-
-    return data as AppConfig;
-  }
-
-  async getAssetsData(id: string, projectId: string): Promise<Asset> {
-    const client = this.supabaseService.clientInstance;
-    const { data, error } = await client
-      .from('assets')
-      .select('id, storage_path')
-      .eq('id', id)
-      .eq('project_id', projectId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Supabase Error (getAssetsData):', error);
-      throw new NotFoundException(
-        `Asset with ID ${id} not found for this project`,
-      );
-    }
-
-    if (!data) {
-      throw new NotFoundException(
-        `Asset with ID ${id} not found for this project`,
-      );
-    }
-
-    return data as Asset;
+    return result;
   }
 }

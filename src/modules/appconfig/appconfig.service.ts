@@ -7,34 +7,10 @@ export class AppconfigService {
 
   async getDataAppConfig(secretID: string) {
     try {
-      const project =
-        await this.appconfigRepository.getProjectBySecret(secretID);
+      const appConfig =
+        await this.appconfigRepository.getAppConfigBySecretJoined(secretID);
 
-      const projectData = await this.appconfigRepository.getDataProjectByID(
-        project.project_id,
-      );
-
-      const appConfig = await this.appconfigRepository.getDataAppConfigByID(
-        projectData.app_config_id,
-      );
-
-      // Fetch assets (icon and splash)
-      const [icon, splash] = await Promise.all([
-        this.appconfigRepository.getAssetsData(
-          appConfig.primary_icon_asset_id,
-          project.project_id,
-        ),
-        this.appconfigRepository.getAssetsData(
-          appConfig.primary_splash_asset_id,
-          project.project_id,
-        ),
-      ]);
-
-      return {
-        ...appConfig,
-        icon_url: icon.storage_path,
-        splash_url: splash.storage_path,
-      };
+      return appConfig;
     } catch (error: unknown) {
       if (error instanceof HttpException) {
         throw error;
